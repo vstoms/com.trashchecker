@@ -31,6 +31,7 @@
 			<select class="homey-form-select" id="country">
 				<option value="NL">NL</option>
 				<option value="BE">BE</option>
+				<option value="NO">NO</option>
 			</select>
         </div>
         <div class="homey-form-group">
@@ -74,6 +75,7 @@
 				<option value="rewl">Reinigingsdienst Waardlanden (NL)</option>
 				<option value="twm">Twente Milieu (NL)</option>
 				<option value="recbe">Recycle! App (BE)</option>
+				<option value="renno">Renovasjonsportal (NO)</option>
 			</select>
         </div>
         <span id="resp" title="Details?" onclick="document.getElementById('respDates').style='display: block;'"></span>
@@ -1236,7 +1238,7 @@
 
 			if(countrySelected === 'NL') {
             	document.getElementById("streetName_div").style.display = 'none';
-            } else if(countrySelected === 'BE') {
+            } else if(countrySelected === 'BE' || countrySelected === 'NO') {
             	document.getElementById("streetName_div").style.display = 'block';
             }
 		}
