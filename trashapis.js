@@ -1587,7 +1587,93 @@ apiList.push({ name: "Twente Milieu", id: "twm", execute: twenteMilieu });
 
 apiList.push({ name: "Recycle App (BE)", id: "recbe", execute: recycleApp });
 
+apiList.push({ name: "Renovasjonsportal (NO)", id: "renno", execute: renovasjonsportal });
+
 apiList.push({ name: "Afvalkalender Cure", id: "acu", execute: afvalkalenderCure })                             // Deprecated as of 2022-06-09
 apiList.push({ name: "Stadswerk072", id: "sw072", execute: afvalwijzerStadswerk072 });                          // Deprecated as of 2022-06-09
+
+function renovasjonsportal(postcode, housenumber, street, country) {
+    console.log("Checking Renovasjonsportal");
+
+    if (country !== "NO") {
+        console.log('unsupported country');
+        return Promise.reject(Error('Unsupported country'));
+    }
+
+    const address = `${street} ${housenumber}`;
+    const API_URL = "https://kalender.renovasjonsportal.no/api/address/";
+
+    return new Promise(async (resolve, reject) => {
+        try {
+            // Get address ID
+            const encodedAddress = encodeURIComponent(address);
+            const response = await httpsPromise({
+                hostname: 'kalender.renovasjonsportal.no',
+                path: `/api/address/${encodedAddress}`,
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = response.body;
+            if (!data.searchResults || data.searchResults.length === 0) {
+                return reject(new Error('Address not found'));
+            }
+
+            const addressId = data.searchResults[0].id;
+
+            // Get waste collection details
+            const detailsResponse = await httpsPromise({
+                hostname: 'kalender.renovasjonsportal.no',
+                path: `/api/address/${addressId}/details/`,
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const details = detailsResponse.body;
+            const disposals = details.disposals;
+
+            // Format dates
+            const dates = {};
+            for (const disposal of disposals) {
+                const collectionDate = new Date(disposal.date);
+                const formattedDate = collectionDate.toISOString().split('T')[0];
+                const collectionType = disposal.fraction;
+
+                switch (collectionType) {
+                    case 'Restavfall':
+                        if (!dates.REST) dates.REST = [];
+                        dates.REST.push(formattedDate);
+                        break;
+                    case 'Matavfall':
+                        if (!dates.GFT) dates.GFT = [];
+                        dates.GFT.push(formattedDate);
+                        break;
+                    case 'Papir':
+                        if (!dates.PAPIER) dates.PAPIER = [];
+                        dates.PAPIER.push(formattedDate);
+                        break;
+                    case 'Glass og metallemballasje':
+                        if (!dates.GLAS) dates.GLAS = [];
+                        dates.GLAS.push(formattedDate);
+                        break;
+                    case 'Plastemballasje':
+                        if (!dates.PLASTIC) dates.PLASTIC = [];
+                        dates.PLASTIC.push(formattedDate);
+                        break;
+                    default:
+                        console.log(`Unknown collection type: ${collectionType}`);
+                }
+            }
+
+            resolve(dates);
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
 
 module.exports = apiList;
